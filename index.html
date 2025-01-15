@@ -7,6 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <title>איזה אח הכי שווה</title>
     <style>
+        /* Your existing styles remain unchanged */
         /* Reset */
         * {
             margin: 0;
@@ -35,6 +36,7 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+            padding-bottom: 100px;
         }
 
         h1 {
@@ -128,6 +130,7 @@
             right: 15px;
             max-width: 450px;
             margin: 0 auto;
+            z-index: 10;
         }
 
         .dialog {
@@ -186,12 +189,12 @@
                 <div class="level-indicator">Level 1/6</div>
             </div>
 
-<div class="game-grid">
-    <button class="game-icon"><img src="public/game-icons/icon1.png" alt="Game icon 1"></button>
-    <button class="game-icon"><img src="public/game-icons/icon2.png" alt="Game icon 2"></button>
-    <button class="game-icon"><img src="public/game-icons/icon3.png" alt="Game icon 3"></button>
-    <button class="game-icon"><img src="public/game-icons/icon4.png" alt="Game icon 4"></button>
-</div>
+            <div class="game-grid">
+                <button class="game-icon"><img src="public/game-icons/icon1.png" alt="Game icon 1"></button>
+                <button class="game-icon"><img src="public/game-icons/icon2.png" alt="Game icon 2"></button>
+                <button class="game-icon"><img src="public/game-icons/icon3.png" alt="Game icon 3"></button>
+                <button class="game-icon"><img src="public/game-icons/icon4.png" alt="Game icon 4"></button>
+            </div>
         </div>
 
         <div id="coins-display">Coins: 0</div>
@@ -222,7 +225,6 @@
     </div>
 
     <script>
-        // Wait for DOM to be fully loaded before initializing
         document.addEventListener('DOMContentLoaded', function() {
             const TOTAL_LEVELS = 6;
             const CATEGORIES = {
@@ -238,7 +240,6 @@
                 icons: []
             };
 
-            // Cache DOM elements
             const elements = {
                 container: document.getElementById('game-container'),
                 levelIndicator: document.querySelector('.level-indicator'),
@@ -257,6 +258,16 @@
                 }
             };
 
+            // Add shuffling function
+            function shuffleArray(array) {
+                const shuffled = [...array];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled;
+            }
+
             function getRandomInRange(min, max) {
                 return Math.floor(Math.random() * (max - min + 1)) + min;
             }
@@ -267,6 +278,26 @@
                 if (rand < 0.5) return { type: 'coins', category: 1, amount: getRandomInRange(CATEGORIES[1].min, CATEGORIES[1].max) };
                 if (rand < 0.75) return { type: 'coins', category: 2, amount: getRandomInRange(CATEGORIES[2].min, CATEGORIES[2].max) };
                 return { type: 'coins', category: 3, amount: getRandomInRange(CATEGORIES[3].min, CATEGORIES[3].max) };
+            }
+
+            function initializeLevel() {
+                // Create array of icon positions and shuffle them
+                const iconPositions = shuffleArray([1, 2, 3, 4]);
+                
+                gameState.icons = Array(4).fill(null).map((_, index) => ({
+                    revealed: false,
+                    prize: generatePrize(),
+                    iconNumber: iconPositions[index] // Add iconNumber to track position
+                }));
+
+                // Ensure one wild icon
+                const hasWild = gameState.icons.some(icon => icon.prize.type === 'wild');
+                if (!hasWild) {
+                    const randomIndex = Math.floor(Math.random() * 4);
+                    gameState.icons[randomIndex].prize = { type: 'wild' };
+                }
+
+                updateUI();
             }
 
             function updateUI() {
@@ -286,24 +317,9 @@
                             </div>`;
                         }
                     } else {
-                        icon.innerHTML = `<img src="public/game-icons/icon${index + 1}.png" alt="Game icon ${index + 1}">`;
+                        icon.innerHTML = `<img src="public/game-icons/icon${gameState.icons[index].iconNumber}.png" alt="Game icon ${gameState.icons[index].iconNumber}">`;
                     }
                 });
-            }
-
-            function initializeLevel() {
-                gameState.icons = Array(4).fill(null).map(() => ({
-                    revealed: false,
-                    prize: generatePrize()
-                }));
-
-                const hasWild = gameState.icons.some(icon => icon.prize.type === 'wild');
-                if (!hasWild) {
-                    const randomIndex = Math.floor(Math.random() * 4);
-                    gameState.icons[randomIndex].prize = { type: 'wild' };
-                }
-
-                updateUI();
             }
 
             function showDialog(type) {
@@ -330,7 +346,7 @@
                     
                     setTimeout(() => {
                         if (gameState.currentLevel === TOTAL_LEVELS) {
-                            document.getElementById('finalScore').textContent = `Coins collected: ${gameState.coinsBalance}`;
+                            document.getElementById('finalScore').textContent = `Coins: ${gameState.coinsBalance}`;
                             showDialog('win');
                             gameState.isPlaying = false;
                         } else {
@@ -365,7 +381,7 @@
             });
 
             elements.quitButton.addEventListener('click', () => {
-                document.getElementById('finalScore').textContent = `Coins collected: ${gameState.coinsBalance}`;
+                document.getElementById('finalScore').textContent = `Coins: ${gameState.coinsBalance}`;
                 showDialog('win');
                 gameState.isPlaying = false;
             });
