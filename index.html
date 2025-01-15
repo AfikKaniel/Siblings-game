@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>איזה אח הכי שווה</title>
+    <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Base styles */
+        html {
+            background-color: #1E1E1E;
+            height: 100%;
+        }
+
+        body {
+            background-color: #1E1E1E;
+            min-height: 100%;
+            padding: 15px;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+        }
+
+        #game-container {
+            max-width: 450px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: calc(20px + 2vw);
+            margin-bottom: 20px;
+            direction: rtl;
+        }
+
+        .level-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .level-indicator {
+            font-size: 20px;
+            font-weight: bold;
+            padding: 8px 16px;
+            background-color: #e6f3ff;
+            color: #000000;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .quit-button {
+            padding: 8px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .game-icon {
+            aspect-ratio: 1;
+            background: #2D2D2D;
+            border: none;
+            border-radius: 12px;
+            padding: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-appearance: none;
+        }
+
+        .game-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 50%;
+        }
+
+        .prize-display {
+            font-size: min(10vw, 48px);
+            text-align: center;
+            color: white;
+        }
+
+        .prize-display.wild-icon {
+            font-size: min(20vw, 96px);
+        }
+
+        .prize-display .amount {
+            font-size: min(8vw, 36px);
+        }
+
+        #coins-display {
+            background-color: #2D2D2D;
+            color: #FFD700;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            position: fixed;
+            bottom: 20px;
+            left: 15px;
+            right: 15px;
+            max-width: 450px;
+            margin: 0 auto;
+        }
+
+        .dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            text-align: center;
+            display: none;
+            min-width: 280px;
+            z-index: 1000;
+        }
+
+        .dialog h2,
+        .dialog p {
+            color: black;
+            margin-bottom: 20px;
+            direction: rtl;
+        }
+
+        .dialog button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            -webkit-appearance: none;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>איזה אח הכי שווה</h1>
+        
+        <div class="game-content">
+            <div class="level-header">
+                <div class="quit-button" style="display: none;">QUIT</div>
+                <div class="level-indicator">Level 1/6</div>
+            </div>
+
+            <div class="game-grid">
+                <!-- Icons will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <div id="coins-display">Coins: 0</div>
+    </div>
+
+    <!-- Dialogs -->
+    <div class="overlay" id="introOverlay"></div>
+    <div class="dialog" id="introDialog">
+        <h2>המשחק של שחר</h2>
+        <p style="font-weight: bold;">
+            מי האח ששווה הכי הרבה נקודות<br>
+            ולהיזהר מהעגבניות כמובן
+        </p>
+        <button>START GAME</button>
+    </div>
+
+    <div class="overlay" id="gameOverOverlay"></div>
+    <div class="dialog" id="gameOverDialog">
+        <h2>GAME OVER</h2>
+        <button>START AGAIN</button>
+    </div>
+
+    <div class="overlay" id="winOverlay"></div>
+    <div class="dialog" id="winDialog">
+        <h2>You did it</h2>
+        <p id="finalScore">Coins: 0</p>
+        <button>START AGAIN</button>
+    </div>
+
+    <script>
+        // Wait for DOM to be fully loaded before initializing
+        document.addEventListener('DOMContentLoaded', function() {
+            const TOTAL_LEVELS = 6;
+            const CATEGORIES = {
+                1: { min: 1, max: 100 },
+                2: { min: 500, max: 1000 },
+                3: { min: 8000, max: 15000 }
+            };
+
+            const gameState = {
+                isPlaying: false,
+                currentLevel: 1,
+                coinsBalance: 0,
+                icons: []
+            };
+
+            // Cache DOM elements
+            const elements = {
+                container: document.getElementById('game-container'),
+                levelIndicator: document.querySelector('.level-indicator'),
+                quitButton: document.querySelector('.quit-button'),
+                coinsDisplay: document.getElementById('coins-display'),
+                gameIcons: Array.from(document.querySelectorAll('.game-icon')),
+                dialogs: {
+                    intro: document.getElementById('introDialog'),
+                    gameOver: document.getElementById('gameOverDialog'),
+                    win: document.getElementById('winDialog')
+                },
+                overlays: {
+                    intro: document.getElementById('introOverlay'),
+                    gameOver: document.getElementById('gameOverOverlay'),
+                    win: document.getElementById('winOverlay')
+                }
+            };
+
+            function getRandomInRange(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            function generatePrize() {
+                const rand = Math.random();
+                if (rand < 0.25) return { type: 'wild' };
+                if (rand < 0.5) return { type: 'coins', category: 1, amount: getRandomInRange(CATEGORIES[1].min, CATEGORIES[1].max) };
+                if (rand < 0.75) return { type: 'coins', category: 2, amount: getRandomInRange(CATEGORIES[2].min, CATEGORIES[2].max) };
+                return { type: 'coins', category: 3, amount: getRandomInRange(CATEGORIES[3].min, CATEGORIES[3].max) };
+            }
+
+            function updateUI() {
+                elements.levelIndicator.textContent = `Level ${gameState.currentLevel}/${TOTAL_LEVELS}`;
+                elements.coinsDisplay.textContent = `Coins: ${gameState.coinsBalance}`;
+                elements.quitButton.style.display = gameState.currentLevel > 1 ? 'block' : 'none';
+
+                elements.gameIcons.forEach((icon, index) => {
+                    if (gameState.icons[index]?.revealed) {
+                        const prize = gameState.icons[index].prize;
+                        if (prize.type === 'wild') {
+                            icon.innerHTML = '<div class="prize-display wild-icon">🍅</div>';
+                        } else {
+                            icon.innerHTML = `<div class="prize-display">
+                                <span>💰</span>
+                                <span class="amount">${prize.amount}</span>
+                            </div>`;
+                        }
+                    } else {
+                        icon.innerHTML = `<img src="public/game-icons/icon${index + 1}.png" alt="Game icon ${index + 1}">`;
+                    }
+                });
+            }
+
+            function initializeLevel() {
+                gameState.icons = Array(4).fill(null).map(() => ({
+                    revealed: false,
+                    prize: generatePrize()
+                }));
+
+                const hasWild = gameState.icons.some(icon => icon.prize.type === 'wild');
+                if (!hasWild) {
+                    const randomIndex = Math.floor(Math.random() * 4);
+                    gameState.icons[randomIndex].prize = { type: 'wild' };
+                }
+
+                updateUI();
+            }
+
+            function showDialog(type) {
+                Object.values(elements.dialogs).forEach(dialog => dialog.style.display = 'none');
+                Object.values(elements.overlays).forEach(overlay => overlay.style.display = 'none');
+                elements.dialogs[type].style.display = 'block';
+                elements.overlays[type].style.display = 'block';
+                
+                if (type === 'win') {
+                    document.getElementById('finalScore').textContent = `Coins: ${gameState.coinsBalance}`;
+                }
+            }
+
+            function handleIconClick(index) {
+                if (!gameState.isPlaying || gameState.icons[index].revealed) return;
+
+                const icon = gameState.icons[index];
+                icon.revealed = true;
+                updateUI();
+
+                if (icon.prize.type === 'coins') {
+                    gameState.coinsBalance += icon.prize.amount;
+                    updateUI();
+                    
+                    setTimeout(() => {
+                        if (gameState.currentLevel === TOTAL_LEVELS) {
+                            document.getElementById('finalScore').textContent = `Coins collected: ${gameState.coinsBalance}`;
+                            showDialog('win');
+                            gameState.isPlaying = false;
+                        } else {
+                            gameState.currentLevel++;
+                            initializeLevel();
+                        }
+                    }, 1000);
+                } else {
+                    setTimeout(() => {
+                        showDialog('gameOver');
+                        gameState.isPlaying = false;
+                    }, 1000);
+                }
+            }
+
+            function startGame() {
+                Object.assign(gameState, {
+                    isPlaying: true,
+                    currentLevel: 1,
+                    coinsBalance: 0,
+                    icons: []
+                });
+                
+                initializeLevel();
+                Object.values(elements.dialogs).forEach(dialog => dialog.style.display = 'none');
+                Object.values(elements.overlays).forEach(overlay => overlay.style.display = 'none');
+            }
+
+            // Event Listeners
+            elements.gameIcons.forEach((icon, index) => {
+                icon.addEventListener('click', () => handleIconClick(index));
+            });
+
+            elements.quitButton.addEventListener('click', () => {
+                document.getElementById('finalScore').textContent = `Coins collected: ${gameState.coinsBalance}`;
+                showDialog('win');
+                gameState.isPlaying = false;
+            });
+
+            document.querySelectorAll('.dialog button').forEach(button => {
+                button.addEventListener('click', startGame);
+            });
+
+            // Start the game
+            showDialog('intro');
+        });
+    </script>
+</body>
+</html>
